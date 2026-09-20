@@ -14,21 +14,14 @@ Alternatively, install it with [uv](https://docs.astral.sh/uv/):
 uv tool install "git+https://github.com/UPD-DCS/klang-bridge-public.git"
 ```
 
-## Use
+## Usage
 
-```sh
-klangb connect
-klangb status
-klangb --dialect func-dynamic program.kl
-klangb run --dialect func-hm program.kl
-klangb --emit-ir=typed --dialect func-hm program.kl
-klangb disconnect
+1. `klangb connect` and wait for process to exit with `Connected.` message
+1. _(optional)_ `klangb status` to troubleshoot
+1. `klangb run -d func-dynamic path/to/program.kl` while connected
+1. `klangb disconnect` when done
 ```
 
-`connect` uses `https://klang.upd-dcs.work` by default. Set `KLANG_WEB_ORIGIN` to use another compatible browser host, including the local server for development:
+Alternatively, you may run `klang run` directly; `klangb connect` will be executed automatically if the bridge is not yet connected.
 
-```sh
-KLANG_WEB_ORIGIN=https://klang.example klangb connect
-```
-
-Compilation and execution require a compatible browser host. See the [bridge guide](docs/klang-web-bridge.md) for configuration and troubleshooting, the [protocol](docs/bridge-protocol.md) for integration details, and the [compatibility vectors](docs/bridge-protocol-vectors.json) for examples.
+Your browser will open upon running `klangb connect` and may display a prompt to allow the site to access local services on your machine; click `Allow` to enable the KLang web IDE to communicate with the local `klangb` process.
