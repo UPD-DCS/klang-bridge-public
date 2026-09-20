@@ -20,7 +20,6 @@ uv tool install "git+https://github.com/UPD-DCS/klang-bridge-public.git"
 1. _(optional; for troubleshooting)_ `klangb status`
 1. `klangb run -d func-dynamic path/to/program.kl` _(while connected)_
 1. `klangb disconnect` _(when done)_
-```
 
 Alternatively, you may run `klang run ...` directly; `klangb connect` will be executed automatically if the bridge is not yet connected.
 
