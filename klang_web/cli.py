@@ -140,7 +140,13 @@ def execute_compiler(
     streamed_stderr: list[str] = []
 
     try:
-        control = manager.open_existing_control()
+        try:
+            control = manager.open_existing_control()
+        except ClientError as error:
+            if not arguments.run or error.code != "client-disconnected":
+                raise
+            manager.connect()
+            control = manager.open_existing_control()
     except ClientError as error:
         _print_error(f"{error.code}: {error}", stderr)
         return error.exit_code

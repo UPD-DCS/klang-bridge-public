@@ -313,7 +313,7 @@ class BrokerManager:
             state = self.paths.read_state()
         except RuntimeStateError as error:
             raise ClientError("Broker state is stale. Run `klangb connect`.", code="client-disconnected") from error
-        if state is None or self.paths.probe(state) == "stale":
+        if state is None or state.state != "ready" or self.paths.probe(state) == "stale":
             raise ClientError("No ready browser bridge. Run `klangb connect` first.", code="client-disconnected")
         try:
             return ControlClient.open(self.paths, timeout=timeout)

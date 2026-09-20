@@ -32,6 +32,9 @@ The compiler vocabulary is the pinned Stage 2 contract: an explicit `-d` or
 `-o`/`--output` for generated Python. There is no inferred dialect and no
 native compiler fallback. Normal compilation writes the default
 `<input-basename>.py` in the current directory; IR never writes a Python file.
+A `run` invocation automatically performs the equivalent of `connect` when no
+ready bridge is attached. Ordinary compilation and IR commands still require
+an existing ready bridge.
 
 `status` reports `ready`, `disconnected`, `stale`, `bootstrapping`, or
 `bootstrap-failed`. `connect` is idempotent and opens the configured
