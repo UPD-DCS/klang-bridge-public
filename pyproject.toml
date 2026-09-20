@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "klang-web"
+version = "0.1.0"
+description = "Native standard-library client for the KLang Web browser bridge"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+klangb = "klang_web.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["klang_web*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100

@@ -1,0 +1,84 @@
+{
+  "protocolVersion": 1,
+  "valid": [
+    {
+      "protocolVersion": 1,
+      "requestId": "bridge-handshake",
+      "type": "handshake",
+      "payload": {"client": "klang-web-browser", "supportedVersions": [1]}
+    },
+    {
+      "protocolVersion": 1,
+      "requestId": "bridge-authenticate",
+      "type": "authenticate",
+      "payload": {"token": "opaque-one-time-token"}
+    },
+    {
+      "protocolVersion": 1,
+      "requestId": "bridge-ready",
+      "type": "ready",
+      "payload": {
+        "workerGeneration": 0,
+        "workerVersion": "worker-v1",
+        "pyodideVersion": "0.27.2",
+        "artifact": {
+          "klangVersion": "0.3.1",
+          "klangCommit": "3cb5dba21600302b701640c5554117564632c51c",
+          "sha256": "2b890be20e4ad4ef693f8384c72c63814abe4de11fd4d51d3c42dbbd16c8e10a",
+          "sizeBytes": 4048156,
+          "supportedDialects": [
+            "func-dynamic", "lazy", "func-stlc", "func-hm", "decl-dynamic", "decl-hm",
+            "rel-dynamic", "rel-hm", "dataflow-dynamic", "dataflow-hm",
+            "state-dynamic", "state-hm", "message-dynamic", "message-hm"
+          ],
+          "compilerContract": {
+            "schemaVersion": 1,
+            "dialects": [
+              "func-dynamic", "lazy", "func-stlc", "func-hm", "decl-dynamic", "decl-hm",
+              "rel-dynamic", "rel-hm", "dataflow-dynamic", "dataflow-hm",
+              "state-dynamic", "state-hm", "message-dynamic", "message-hm"
+            ],
+            "irModes": ["default", "typed", "spans"],
+            "options": ["--run", "--emit-ir", "--emit-ir=typed", "--emit-ir=spans", "-d", "--dialect", "-o", "--output"]
+          }
+        },
+        "contract": {
+          "schemaVersion": 1,
+          "dialects": [
+            "func-dynamic", "lazy", "func-stlc", "func-hm", "decl-dynamic", "decl-hm",
+            "rel-dynamic", "rel-hm", "dataflow-dynamic", "dataflow-hm",
+            "state-dynamic", "state-hm", "message-dynamic", "message-hm"
+          ],
+          "irModes": ["default", "typed", "spans"],
+          "options": ["--run", "--emit-ir", "--emit-ir=typed", "--emit-ir=spans", "-d", "--dialect", "-o", "--output"]
+        }
+      }
+    },
+    {
+      "protocolVersion": 1,
+      "requestId": "compile-1",
+      "type": "compile",
+      "payload": {
+        "snapshot": {
+          "rootPath": "main.kl",
+          "files": [{"path": "main.kl", "text": "42;"}],
+          "settings": {},
+          "limits": {}
+        }
+      }
+    },
+    {
+      "protocolVersion": 1,
+      "requestId": "result-1",
+      "type": "result",
+      "payload": {"operation": "compile", "result": {"status": "success"}}
+    }
+  ],
+  "invalid": [
+    "unknown envelope fields are rejected",
+    "duplicate JSON object keys are rejected",
+    "protocolVersion other than 1 is rejected",
+    "bridge tokens in a WebSocket query string are rejected",
+    "unmasked client frames, binary frames, invalid/interleaved fragments, and compressed/RSV frames are rejected; extension offers are not negotiated"
+  ]
+}
