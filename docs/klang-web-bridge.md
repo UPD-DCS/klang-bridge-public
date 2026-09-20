@@ -35,7 +35,7 @@ native compiler fallback. Normal compilation writes the default
 
 `status` reports `ready`, `disconnected`, `stale`, `bootstrapping`, or
 `bootstrap-failed`. `connect` is idempotent and opens the configured
-`KLANG_WEB_ORIGIN` bridge URL (default `http://127.0.0.1:5174`) only when a
+`KLANG_WEB_ORIGIN` bridge URL (default `https://klang.upd-dcs.work`) only when a
 ready authenticated bridge is not already attached. `disconnect` is an
 idempotent best-effort runtime disposal and broker shutdown.
 
@@ -50,8 +50,9 @@ that directory can set the non-secret origin:
 origin = https://klang.example
 ```
 
-`KLANG_WEB_ORIGIN` overrides the config file, which overrides the local
-`http://127.0.0.1:5174` default. The broker stores its control
+`KLANG_WEB_ORIGIN` overrides the config file, which overrides the
+`https://klang.upd-dcs.work` default. Set either override to
+`http://127.0.0.1:5174` for local development. The broker stores its control
 secret in a private file, binds both listeners to `127.0.0.1`, and uses a
 length-prefixed UTF-8 JSON control channel. The browser side uses a minimal
 RFC 6455 text WebSocket channel. It requires:

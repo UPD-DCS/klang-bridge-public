@@ -25,7 +25,7 @@ klangb --emit-ir=typed --dialect func-hm program.kl
 klangb disconnect
 ```
 
-`connect` uses `http://127.0.0.1:5174` by default. Set `KLANG_WEB_ORIGIN` to use another compatible browser host:
+`connect` uses `https://klang.upd-dcs.work` by default. Set `KLANG_WEB_ORIGIN` to use another compatible browser host, including the local server for development:
 
 ```sh
 KLANG_WEB_ORIGIN=https://klang.example klangb connect

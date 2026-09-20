@@ -64,7 +64,7 @@ from .websocket import (
     WebSocketProtocolError,
 )
 
-DEFAULT_ORIGIN = "http://127.0.0.1:5174"
+DEFAULT_ORIGIN = "https://klang.upd-dcs.work"
 DEFAULT_TOKEN_TTL_SECONDS = 120.0
 DEFAULT_OPERATION_TIMEOUT_SECONDS = 30.0
 DEFAULT_CONTROL_TIMEOUT_SECONDS = 5.0
