@@ -22,6 +22,6 @@ uv tool install "git+https://github.com/UPD-DCS/klang-bridge-public.git"
 1. `klangb disconnect` when done
 ```
 
-Alternatively, you may run `klang run` directly; `klangb connect` will be executed automatically if the bridge is not yet connected.
+Alternatively, you may run `klang run ...` directly; `klangb connect` will be executed automatically if the bridge is not yet connected.
 
 Your browser will open upon running `klangb connect` and may display a prompt to allow the site to access local services on your machine; click `Allow` to enable the KLang web IDE to communicate with the local `klangb` process.
