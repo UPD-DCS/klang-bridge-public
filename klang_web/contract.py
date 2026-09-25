@@ -1,4 +1,4 @@
-"""The pinned Stage 2 compiler contract used at the native boundary."""
+"""Protocol-1 compiler capabilities used at the native boundary."""
 
 from __future__ import annotations
 
@@ -6,12 +6,10 @@ import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Final, Mapping
+from typing import Any, Final, Mapping, Sequence
 
-PINNED_KLANG_VERSION: Final[str] = "0.3.1"
-PINNED_KLANG_COMMIT: Final[str] = "3cb5dba21600302b701640c5554117564632c51c"
-PINNED_ARTIFACT_SHA256: Final[str] = "2b890be20e4ad4ef693f8384c72c63814abe4de11fd4d51d3c42dbbd16c8e10a"
-PINNED_ARTIFACT_SIZE_BYTES: Final[int] = 4_048_156
+from .protocol import KLANG_VERSION_PATTERN
+
 SUPPORTED_DIALECTS: Final[tuple[str, ...]] = (
     "func-dynamic",
     "lazy",
@@ -43,11 +41,34 @@ COMPILER_CONTRACT_SCHEMA_VERSION: Final[int] = 1
 ARTIFACT_MANIFEST_SCHEMA_VERSION: Final[int] = 1
 
 
+class ContractError(ValueError):
+    """Raised when compiler metadata is malformed or incompatible."""
+
+
+def require_capabilities(
+    value: object,
+    required: Sequence[str],
+    field: str,
+) -> tuple[str, ...]:
+    """Validate one advertised capability catalog and require the native subset."""
+
+    if not isinstance(value, (list, tuple)) or not all(
+        isinstance(item, str) and item for item in value
+    ):
+        raise ContractError(f"{field} must be a list of non-empty strings")
+    catalog = tuple(value)
+    if len(catalog) != len(set(catalog)):
+        raise ContractError(f"{field} contains duplicate entries")
+    missing = [item for item in required if item not in catalog]
+    if missing:
+        raise ContractError(f"{field} is missing required capabilities: {missing!r}")
+    return catalog
+
+
 @dataclass(frozen=True)
 class CompilerContract:
-    """Public compiler options and provenance for one browser artifact."""
+    """Compiler capabilities advertised by one protocol-1 browser host."""
 
-    klang_commit: str = PINNED_KLANG_COMMIT
     supported_dialects: tuple[str, ...] = SUPPORTED_DIALECTS
     ir_modes: tuple[str, ...] = IR_MODES
     options: tuple[str, ...] = COMPILER_OPTIONS
@@ -58,37 +79,21 @@ class CompilerContract:
     run_alias: str = "run"
 
     def __post_init__(self) -> None:
-        if self.klang_commit != PINNED_KLANG_COMMIT:
-            raise ContractError("compiler contract is not tied to the pinned KLang commit")
-        if self.supported_dialects != SUPPORTED_DIALECTS:
-            raise ContractError("compiler contract dialect catalog is not the Stage 2 catalog")
-        if self.ir_modes != IR_MODES:
-            raise ContractError("compiler contract IR modes are not the Stage 2 modes")
-        if self.options != COMPILER_OPTIONS:
-            raise ContractError("compiler contract options do not match Stage 2")
+        require_capabilities(self.supported_dialects, SUPPORTED_DIALECTS, "compiler dialects")
+        require_capabilities(self.ir_modes, IR_MODES, "compiler IR modes")
+        require_capabilities(self.options, COMPILER_OPTIONS, "compiler options")
         if self.default_dialect is not None:
-            raise ContractError("Stage 2 does not infer a default dialect")
+            raise ContractError("the native compiler contract does not infer a default dialect")
         if type(self.schema_version) is not int or self.schema_version != COMPILER_CONTRACT_SCHEMA_VERSION:
             raise ContractError("unsupported compiler contract schema")
-
-
-class ContractError(ValueError):
-    """Raised when packaged compiler metadata is malformed or mismatched."""
 
 
 def default_compiler_contract() -> CompilerContract:
     return CompilerContract()
 
 
-def _require_string_tuple(mapping: Mapping[str, Any], key: str) -> tuple[str, ...]:
-    value = mapping.get(key)
-    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
-        raise ContractError(f"compiler contract field {key!r} must be a string list")
-    return tuple(value)
-
-
 def _contract_value(manifest: Mapping[str, Any]) -> Mapping[str, Any]:
-    """Get the generated compiler contract, accepting transitional field names."""
+    """Get the compiler contract while requiring all supplied aliases to agree."""
 
     values: list[Mapping[str, Any]] = []
     for key in ("compilerContract", "cliContract", "contract"):
@@ -105,19 +110,38 @@ def _contract_value(manifest: Mapping[str, Any]) -> Mapping[str, Any]:
     return first
 
 
+def _validate_provenance(manifest: Mapping[str, Any]) -> Mapping[str, Any]:
+    version = manifest.get("klangVersion")
+    if not isinstance(version, str) or not KLANG_VERSION_PATTERN.fullmatch(version):
+        raise ContractError("artifact manifest KLang version is invalid")
+    commit = manifest.get("klangCommit")
+    if not isinstance(commit, str) or not commit:
+        raise ContractError("artifact manifest KLang commit is invalid")
+    artifact = manifest.get("artifact")
+    if not isinstance(artifact, dict):
+        raise ContractError("artifact manifest has no artifact metadata")
+    digest = artifact.get("sha256")
+    if not isinstance(digest, str) or len(digest) != 64 or any(
+        character not in "0123456789abcdef" for character in digest
+    ):
+        raise ContractError("artifact manifest hash is invalid")
+    size = artifact.get("sizeBytes")
+    if not isinstance(size, int) or isinstance(size, bool) or size <= 0:
+        raise ContractError("artifact manifest size is invalid")
+    return artifact
+
+
 def contract_from_manifest(manifest: Mapping[str, Any]) -> CompilerContract:
-    """Validate the generated compiler contract embedded in an artifact manifest."""
+    """Validate compatible compiler capabilities embedded in an artifact manifest."""
 
     if manifest.get("schemaVersion") != ARTIFACT_MANIFEST_SCHEMA_VERSION or isinstance(
         manifest.get("schemaVersion"), bool
     ):
         raise ContractError("unsupported artifact manifest schema")
-    if manifest.get("klangVersion") != PINNED_KLANG_VERSION:
-        raise ContractError("artifact manifest does not identify the pinned KLang version")
-    if manifest.get("klangCommit") != PINNED_KLANG_COMMIT:
-        raise ContractError("artifact manifest does not identify the pinned KLang commit")
-    if manifest.get("supportedDialects") != list(SUPPORTED_DIALECTS):
-        raise ContractError("artifact manifest dialect catalog is not the Stage 2 catalog")
+    _validate_provenance(manifest)
+    top_level_dialects = require_capabilities(
+        manifest.get("supportedDialects"), SUPPORTED_DIALECTS, "artifact dialect catalog"
+    )
 
     raw = _contract_value(manifest)
     allowed = {"schemaVersion", "dialects", "irModes", "options"}
@@ -128,17 +152,15 @@ def contract_from_manifest(manifest: Mapping[str, Any]) -> CompilerContract:
         raw.get("schemaVersion"), bool
     ):
         raise ContractError("unsupported compiler contract schema")
-    if raw.get("dialects") != list(SUPPORTED_DIALECTS):
-        raise ContractError("compiler contract dialect catalog is not the Stage 2 catalog")
-    if raw.get("irModes") != list(IR_MODES):
-        raise ContractError("compiler contract IR catalog is not the Stage 2 catalog")
-    if raw.get("options") != list(COMPILER_OPTIONS):
-        raise ContractError("compiler contract option list does not match Stage 2")
+    dialects = require_capabilities(raw.get("dialects"), SUPPORTED_DIALECTS, "compiler dialects")
+    if set(dialects) != set(top_level_dialects):
+        raise ContractError("artifact and compiler contract dialect catalogs disagree")
+    ir_modes = require_capabilities(raw.get("irModes"), IR_MODES, "compiler IR modes")
+    options = require_capabilities(raw.get("options"), COMPILER_OPTIONS, "compiler options")
     return CompilerContract(
-        klang_commit=PINNED_KLANG_COMMIT,
-        supported_dialects=_require_string_tuple({"dialects": raw["dialects"]}, "dialects"),
-        ir_modes=_require_string_tuple(raw, "irModes"),
-        options=_require_string_tuple(raw, "options"),
+        supported_dialects=dialects,
+        ir_modes=ir_modes,
+        options=options,
     )
 
 
@@ -147,13 +169,7 @@ def load_compiler_contract(
     *,
     verify_artifact: bool = True,
 ) -> CompilerContract:
-    """Load and validate packaged compiler metadata.
-
-    ``manifest_path`` is injectable for tests and alternate installations.  An
-    installed wheels use the pinned built-in contract by default; an explicit
-    manifest path can provide artifact metadata for a compatible browser host
-    or an integration test.
-    """
+    """Load compatible compiler capabilities and optionally verify local artifact bytes."""
 
     if manifest_path is None:
         return default_compiler_contract()
@@ -168,9 +184,7 @@ def load_compiler_contract(
         raise ContractError("artifact manifest must be an object")
     contract = contract_from_manifest(manifest)
     if verify_artifact:
-        artifact_entry = manifest.get("artifact")
-        if not isinstance(artifact_entry, dict):
-            raise ContractError("artifact manifest has no artifact metadata")
+        artifact_entry = manifest["artifact"]
         relative = artifact_entry.get("path")
         if not isinstance(relative, str) or Path(relative).name != relative:
             raise ContractError("artifact manifest path must be a file in its manifest directory")
@@ -186,7 +200,7 @@ def load_compiler_contract(
 
 
 def manifest_compiler_contract() -> dict[str, Any]:
-    """Return the JSON-compatible generated contract used by build tooling."""
+    """Return the JSON-compatible capabilities used by build tooling."""
 
     return {
         "schemaVersion": COMPILER_CONTRACT_SCHEMA_VERSION,

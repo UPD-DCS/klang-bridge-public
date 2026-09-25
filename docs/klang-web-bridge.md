@@ -70,12 +70,18 @@ RFC 6455 text WebSocket channel. It requires:
   the broker ignores the browser's default permessage-deflate offer and never
   sets RSV bits.
 
-Tokens are not written to state or logs. State files contain endpoint, PID,
-protocol, status, generation, and artifact identity only. The browser bridge
-must report KLang version `0.3.1`, the pinned commit
-`3cb5dba21600302b701640c5554117564632c51c`, the exact artifact hash/size, all
-14 dialects (including `lazy`), Worker version, Pyodide version, and generation before operations
-are accepted.
+Tokens are not written to state or logs. Before attachment, state files contain
+only endpoint, PID, protocol, status, and generation data. After readiness they
+also record the authenticated browser's reported compiler and runtime
+provenance.
+
+Compatibility is based on protocol version `1` and compiler capabilities, not a
+specific KLang, Worker, or Pyodide release. The browser must report valid
+provenance, all 14 dialects (including `lazy`), all three IR modes, the native
+option vocabulary, and a non-negative Worker generation. Additional dialects,
+IR modes, and options are allowed. KLang version, commit, artifact hash and
+size, Worker version, and Pyodide version remain visible in status output but
+do not form an artifact allowlist.
 
 ## Protocol envelope and vectors
 

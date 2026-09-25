@@ -14,9 +14,11 @@ The connection sequence is:
 2. broker replies `handshake-ack`;
 3. browser sends `authenticate` with the fragment token;
 4. broker replies `authenticated` and the browser waits for the existing Worker/Pyodide bootstrap;
-5. browser sends `ready` with artifact commit/hash, Pyodide version, Worker version, and generation;
+5. browser sends `ready` with artifact provenance, compiler capabilities, Pyodide version, Worker version, and generation;
 6. broker replies `ready-ack` with a `ready` status.
 
-After readiness, the broker sends `compile`, `emit-ir`, `run`, `stdin`, `stop`, `status`, or `dispose` requests. The browser responds with correlated `result` or `error` envelopes. Stream and lifecycle notifications use `output`, `compiler-output`, `stdin-request`, `diagnostic`, `mutation`, `resource-limit`, and `status` messages. Readiness rejects a non-pinned compiler commit, artifact hash/catalog mismatch, incompatible generated contract, missing Pyodide/Worker metadata, or invalid Worker generation metadata.
+After readiness, the broker sends `compile`, `emit-ir`, `run`, `stdin`, `stop`, `status`, or `dispose` requests. The browser responds with correlated `result` or `error` envelopes. Stream and lifecycle notifications use `output`, `compiler-output`, `stdin-request`, `diagnostic`, `mutation`, `resource-limit`, and `status` messages.
+
+Readiness compatibility is version-agnostic within protocol version `1`. The broker requires valid provenance and every dialect, IR mode, and option used by the native client, while accepting additional capabilities. It rejects malformed provenance, duplicate or missing capabilities, unsupported capability schemas, contract metadata that disagrees with artifact metadata, missing Pyodide/Worker metadata, and invalid Worker generations. Reported KLang, artifact, Worker, and Pyodide identities are retained for diagnostics rather than compared with a compiled-in allowlist.
 
 Messages are rejected for malformed JSON, unknown fields/types, unsupported protocol versions, invalid request IDs, invalid tokens, invalid snapshots, or a payload larger than `1 MiB`. The browser never puts source in a public HTTP request; source is carried only in authenticated loopback bridge messages and then passed to the existing browser Worker lifecycle.

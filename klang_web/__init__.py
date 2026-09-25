@@ -1,17 +1,13 @@
 """Native client and persistent localhost broker for KLang Web.
 
 The package intentionally contains no compiler or Python execution engine.  It
-only validates the pinned command contract, transfers bounded source snapshots,
-and talks to the browser bridge over authenticated local transports.
+only validates the protocol-1 command capabilities, transfers bounded source
+snapshots, and talks to the browser bridge over authenticated local transports.
 """
 
 from .contract import (
     COMPILER_OPTIONS,
     IR_MODES,
-    PINNED_ARTIFACT_SHA256,
-    PINNED_ARTIFACT_SIZE_BYTES,
-    PINNED_KLANG_COMMIT,
-    PINNED_KLANG_VERSION,
     SUPPORTED_DIALECTS,
     CompilerContract,
     load_compiler_contract,
@@ -27,10 +23,6 @@ __all__ = [
     "ControlClient",
     "CompilerContract",
     "IR_MODES",
-    "PINNED_ARTIFACT_SHA256",
-    "PINNED_ARTIFACT_SIZE_BYTES",
-    "PINNED_KLANG_COMMIT",
-    "PINNED_KLANG_VERSION",
     "SUPPORTED_DIALECTS",
     "UsageError",
     "load_compiler_contract",

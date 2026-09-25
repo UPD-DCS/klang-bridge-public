@@ -22,10 +22,10 @@
         "workerVersion": "worker-v1",
         "pyodideVersion": "0.27.2",
         "artifact": {
-          "klangVersion": "0.3.1",
-          "klangCommit": "3cb5dba21600302b701640c5554117564632c51c",
-          "sha256": "2b890be20e4ad4ef693f8384c72c63814abe4de11fd4d51d3c42dbbd16c8e10a",
-          "sizeBytes": 4048156,
+          "klangVersion": "1.0.0",
+          "klangCommit": "fca05d2f7f99c7379dfa72eec84521baf662de89",
+          "sha256": "b077405f879b1607671a876faf2851563ed45b18ecebe208b37468c46549fde8",
+          "sizeBytes": 4087882,
           "supportedDialects": [
             "func-dynamic", "lazy", "func-stlc", "func-hm", "decl-dynamic", "decl-hm",
             "rel-dynamic", "rel-hm", "dataflow-dynamic", "dataflow-hm",

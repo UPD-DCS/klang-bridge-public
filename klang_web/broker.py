@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import hmac
-import json
 import os
 import queue
 import secrets
@@ -29,13 +28,11 @@ from typing import Any, Callable, Mapping
 from urllib.parse import urlsplit, urlunsplit
 
 from .contract import (
-    PINNED_ARTIFACT_SHA256,
-    PINNED_ARTIFACT_SIZE_BYTES,
     COMPILER_OPTIONS,
     IR_MODES,
-    PINNED_KLANG_COMMIT,
-    PINNED_KLANG_VERSION,
     SUPPORTED_DIALECTS,
+    ContractError,
+    require_capabilities,
 )
 from .paths import (
     BrokerState,
@@ -73,7 +70,6 @@ DEFAULT_BRIDGE_AUTH_TIMEOUT_SECONDS = 10.0
 # authentication window. Keep handshake/auth bounded, but allow readiness to
 # settle within the same budget exposed by the native connect command.
 BRIDGE_READY_TIMEOUT_SECONDS = 120.0
-EXPECTED_PYODIDE_VERSION = "0.27.2"
 
 
 class BrokerError(RuntimeError):
@@ -102,7 +98,6 @@ class BrokerConfig:
     operation_timeout_seconds: float = DEFAULT_OPERATION_TIMEOUT_SECONDS
     bridge_auth_timeout_seconds: float = DEFAULT_BRIDGE_AUTH_TIMEOUT_SECONDS
     bridge_ready_timeout_seconds: float = BRIDGE_READY_TIMEOUT_SECONDS
-    expected_manifest: Path | None = None
 
     def __post_init__(self) -> None:
         parsed = urlsplit(self.origin)
@@ -241,7 +236,6 @@ class PersistentBroker:
         operation_timeout_seconds: float = DEFAULT_OPERATION_TIMEOUT_SECONDS,
         bridge_auth_timeout_seconds: float = DEFAULT_BRIDGE_AUTH_TIMEOUT_SECONDS,
         bridge_ready_timeout_seconds: float = BRIDGE_READY_TIMEOUT_SECONDS,
-        expected_manifest: str | Path | None = None,
         control_port: int = 0,
         websocket_port: int = 0,
     ) -> None:
@@ -253,7 +247,6 @@ class PersistentBroker:
             operation_timeout_seconds=operation_timeout_seconds,
             bridge_auth_timeout_seconds=bridge_auth_timeout_seconds,
             bridge_ready_timeout_seconds=bridge_ready_timeout_seconds,
-            expected_manifest=Path(expected_manifest) if expected_manifest is not None else None,
         )
         self.control_port = control_port
         self.websocket_port = websocket_port
@@ -274,7 +267,6 @@ class PersistentBroker:
         self._pending: dict[str, _Operation] = {}
         self._queued: dict[str, _Operation] = {}
         self._operation_queue: queue.Queue[_Operation | None] = queue.Queue()
-        self._expected_artifact = self._read_expected_artifact()
 
     @property
     def paths(self) -> RuntimePaths:
@@ -327,7 +319,7 @@ class PersistentBroker:
                 state="starting",
                 generation=0,
                 started_at=time.time(),
-                artifact=self._expected_artifact,
+                artifact=None,
             )
             self._publish_state("disconnected")
             self._started = True
@@ -593,42 +585,6 @@ class PersistentBroker:
         if not self._started:
             raise BrokerError("broker is not started")
 
-    def _read_expected_artifact(self) -> dict[str, Any] | None:
-        manifest = self.config.expected_manifest
-        if manifest is None:
-            return {
-                "klangVersion": PINNED_KLANG_VERSION,
-                "klangCommit": PINNED_KLANG_COMMIT,
-                "sha256": PINNED_ARTIFACT_SHA256,
-                "sizeBytes": PINNED_ARTIFACT_SIZE_BYTES,
-                "supportedDialects": list(SUPPORTED_DIALECTS),
-            }
-        try:
-            value = json.loads(manifest.read_text(encoding="utf-8"))
-            if not isinstance(value, dict):
-                raise BrokerError("packaged compiler manifest is malformed")
-            artifact = value.get("artifact")
-            if not isinstance(artifact, dict):
-                raise BrokerError("packaged compiler manifest is malformed")
-            expected = {
-                "klangVersion": value.get("klangVersion"),
-                "klangCommit": value.get("klangCommit"),
-                "sha256": artifact.get("sha256"),
-                "sizeBytes": artifact.get("sizeBytes"),
-                "supportedDialects": value.get("supportedDialects"),
-            }
-            if expected != {
-                "klangVersion": PINNED_KLANG_VERSION,
-                "klangCommit": PINNED_KLANG_COMMIT,
-                "sha256": PINNED_ARTIFACT_SHA256,
-                "sizeBytes": PINNED_ARTIFACT_SIZE_BYTES,
-                "supportedDialects": list(SUPPORTED_DIALECTS),
-            }:
-                raise BrokerError("packaged compiler manifest does not match the pinned contract")
-            return expected
-        except (OSError, UnicodeError, json.JSONDecodeError) as error:
-            raise BrokerError("could not read packaged compiler manifest") from error
-
     def _publish_state(self, state_name: str) -> None:
         with self._state_lock:
             if self._state is None:
@@ -665,7 +621,7 @@ class PersistentBroker:
                 protocol_version=current.protocol_version,
                 generation=generation,
                 started_at=current.started_at,
-                artifact=current.artifact,
+                artifact=dict(metadata["artifact"]),
             )
             self.paths.write_state(self._state)
 
@@ -858,17 +814,14 @@ class PersistentBroker:
         artifact = payload.get("artifact")
         if not isinstance(artifact, dict):
             raise BridgeError("bridge readiness did not include artifact metadata")
-        if artifact.get("klangVersion") != PINNED_KLANG_VERSION:
-            raise BridgeError("bridge compiler version does not match the pinned contract")
-        if artifact.get("klangCommit") != PINNED_KLANG_COMMIT:
-            raise BridgeError("bridge compiler commit does not match the pinned contract")
-        if artifact.get("supportedDialects") != list(SUPPORTED_DIALECTS):
-            raise BridgeError("bridge dialect catalog does not match the pinned contract")
-        expected = self._expected_artifact
-        if expected is not None:
-            for key in ("sha256", "sizeBytes"):
-                if artifact.get(key) != expected.get(key):
-                    raise BridgeError(f"bridge artifact {key} does not match the packaged artifact")
+        try:
+            artifact_dialects = require_capabilities(
+                artifact.get("supportedDialects"),
+                SUPPORTED_DIALECTS,
+                "bridge artifact dialects",
+            )
+        except ContractError as error:
+            raise BridgeError(str(error)) from error
         generation = payload.get("workerGeneration")
         worker_version = payload.get("workerVersion")
         pyodide_version = payload.get("pyodideVersion")
@@ -878,15 +831,21 @@ class PersistentBroker:
             raise BridgeError("bridge readiness worker version is missing")
         if not isinstance(pyodide_version, str) or not pyodide_version:
             raise BridgeError("bridge readiness Pyodide version is missing")
-        if pyodide_version != EXPECTED_PYODIDE_VERSION:
-            raise BridgeError("bridge Pyodide version does not match the packaged runtime")
+
+        contracts: list[Mapping[str, Any]] = []
         contract = payload.get("contract")
-        if contract is not None:
-            self._validate_contract_metadata(contract, artifact)
+        if isinstance(contract, dict):
+            contracts.append(contract)
         for key in ("cliContract", "compilerContract", "contract"):
             nested = artifact.get(key)
             if isinstance(nested, dict):
-                self._validate_contract_metadata(nested, artifact)
+                contracts.append(nested)
+        if not contracts:
+            raise BridgeError("bridge readiness did not include compiler capabilities")
+        first_contract = contracts[0]
+        if any(candidate != first_contract for candidate in contracts[1:]):
+            raise BridgeError("bridge compiler contract aliases disagree")
+        self._validate_contract_metadata(first_contract, artifact, artifact_dialects)
         return {
             "workerGeneration": generation,
             "workerVersion": worker_version,
@@ -899,20 +858,31 @@ class PersistentBroker:
         self,
         contract: Mapping[str, Any],
         artifact: Mapping[str, Any],
+        artifact_dialects: tuple[str, ...],
     ) -> None:
-        if contract.get("klangCommit") not in {None, PINNED_KLANG_COMMIT}:
-            raise BridgeError("bridge compiler contract commit does not match the pinned artifact")
+        contract_commit = contract.get("klangCommit")
+        if contract_commit is not None and contract_commit != artifact.get("klangCommit"):
+            raise BridgeError("bridge compiler contract commit disagrees with artifact metadata")
         contract_hash = contract.get("artifactSha256", contract.get("compilerArtifactHash"))
         if contract_hash is not None and contract_hash != artifact.get("sha256"):
-            raise BridgeError("bridge compiler contract hash does not match the pinned artifact")
-        if "schemaVersion" in contract and contract["schemaVersion"] != 1:
+            raise BridgeError("bridge compiler contract hash disagrees with artifact metadata")
+        if contract.get("schemaVersion") != 1 or isinstance(contract.get("schemaVersion"), bool):
             raise BridgeError("bridge compiler contract schema is unsupported")
-        if "dialects" in contract and contract["dialects"] != list(SUPPORTED_DIALECTS):
-            raise BridgeError("bridge compiler contract dialects do not match the pinned contract")
-        if "irModes" in contract and contract["irModes"] != list(IR_MODES):
-            raise BridgeError("bridge compiler contract IR modes do not match the pinned contract")
-        if "options" in contract and contract["options"] != list(COMPILER_OPTIONS):
-            raise BridgeError("bridge compiler contract options do not match the pinned contract")
+        dialect_value = contract.get("dialects", contract.get("supportedDialects"))
+        try:
+            dialects = require_capabilities(
+                dialect_value, SUPPORTED_DIALECTS, "bridge compiler contract dialects"
+            )
+            require_capabilities(
+                contract.get("irModes"), IR_MODES, "bridge compiler contract IR modes"
+            )
+            require_capabilities(
+                contract.get("options"), COMPILER_OPTIONS, "bridge compiler contract options"
+            )
+        except ContractError as error:
+            raise BridgeError(str(error)) from error
+        if set(dialects) != set(artifact_dialects):
+            raise BridgeError("bridge artifact and compiler contract dialects disagree")
 
     def _handle_bridge_message(self, attachment: _BridgeAttachment, message: Envelope) -> None:
         if message.type in {"result", "error"}:
