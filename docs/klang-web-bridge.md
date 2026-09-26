@@ -19,6 +19,7 @@ The console entry point is `klangb`.
 
 ```sh
 klangb connect
+klangb connect --manual
 klangb status
 klangb disconnect
 klangb --dialect func-dynamic program.kl
@@ -39,8 +40,10 @@ an existing ready bridge.
 `status` reports `ready`, `disconnected`, `stale`, `bootstrapping`, or
 `bootstrap-failed`. `connect` is idempotent and opens the configured
 `KLANG_WEB_ORIGIN` bridge URL (default `https://klang.upd-dcs.work`) only when a
-ready authenticated bridge is not already attached. `disconnect` is an
-idempotent best-effort runtime disposal and broker shutdown.
+ready authenticated bridge is not already attached. Use `connect --manual` when
+the CLI must not open a browser: it prints the one-time bridge URL, then waits
+for the user to open it and for the browser runtime to become ready.
+`disconnect` is an idempotent best-effort runtime disposal and broker shutdown.
 
 ## Local boundary and security
 

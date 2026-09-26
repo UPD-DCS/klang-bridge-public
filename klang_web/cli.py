@@ -308,12 +308,22 @@ def main(
 
     if args and args[0] in {"connect", "status", "disconnect"}:
         command = args[0]
-        if len(args) != 1:
+        if command == "connect":
+            if args[1:] not in ([], ["--manual"]):
+                _print_error(usage_text(), err)
+                return 2
+        elif len(args) != 1:
             _print_error(usage_text(), err)
             return 2
         try:
             if command == "connect":
-                broker_manager.connect()
+                if args[1:] == ["--manual"]:
+                    broker_manager.connect(
+                        manual=True,
+                        on_bridge_url=lambda bridge_url: print(bridge_url, file=out, flush=True),
+                    )
+                else:
+                    broker_manager.connect()
                 _print_error("Connected.", out)
                 return 0
             if command == "status":

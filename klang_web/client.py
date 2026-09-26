@@ -353,7 +353,13 @@ class BrokerManager:
             raise ClientError("The browser broker did not become ready.", code="client-broker") from last_error
         raise ClientError("The browser broker did not become ready.", code="client-broker")
 
-    def connect(self, *, timeout: float = BRIDGE_READY_TIMEOUT_SECONDS) -> dict[str, Any]:
+    def connect(
+        self,
+        *,
+        timeout: float = BRIDGE_READY_TIMEOUT_SECONDS,
+        manual: bool = False,
+        on_bridge_url: Callable[[str], None] | None = None,
+    ) -> dict[str, Any]:
         control = self.open_control()
         try:
             bootstrap = control.connect_bridge(timeout=5.0)
@@ -362,14 +368,18 @@ class BrokerManager:
             bridge_url = bootstrap.get("bridgeUrl")
             if not isinstance(bridge_url, str) or not bridge_url:
                 raise ClientError("The broker could not create a browser bridge bootstrap.", code="client-broker")
-            try:
-                opened = self.opener(bridge_url)
-                if opened is False:
-                    raise ClientError("Could not open the browser bridge page.", code="client-broker")
-            except ClientError:
-                raise
-            except Exception as error:
-                raise ClientError("Could not open the browser bridge page.", code="client-broker") from error
+            if manual:
+                if on_bridge_url is not None:
+                    on_bridge_url(bridge_url)
+            else:
+                try:
+                    opened = self.opener(bridge_url)
+                    if opened is False:
+                        raise ClientError("Could not open the browser bridge page.", code="client-broker")
+                except ClientError:
+                    raise
+                except Exception as error:
+                    raise ClientError("Could not open the browser bridge page.", code="client-broker") from error
             deadline = time.monotonic() + timeout
             last: dict[str, Any] = bootstrap
             while time.monotonic() < deadline:

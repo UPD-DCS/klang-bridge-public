@@ -18,6 +18,7 @@ uv tool install "git+https://github.com/UPD-DCS/klang-bridge-public.git"
 
 ```sh
 klangb connect
+klangb connect --manual
 klangb status
 klangb --dialect func-dynamic program.kl
 klangb run --dialect func-hm program.kl
@@ -25,7 +26,11 @@ klangb --emit-ir=typed --dialect func-hm program.kl
 klangb disconnect
 ```
 
-`connect` uses `https://klang.upd-dcs.work` by default. Set `KLANG_WEB_ORIGIN` to use another compatible browser host, including the local server for development:
+`connect` uses `https://klang.upd-dcs.work` by default. Use
+`klangb connect --manual` to print the one-time bridge URL instead of opening a
+browser automatically; the command waits for you to open that URL and for the
+bridge to become ready. Set `KLANG_WEB_ORIGIN` to use another compatible browser
+host, including the local server for development:
 
 ```sh
 KLANG_WEB_ORIGIN=https://klang.example klangb connect
