@@ -21,6 +21,37 @@ from .parser import CompilerArguments, UsageError, default_output_name, parse_cl
 from .snapshot import LocalSnapshotError, atomic_write_text, discover_snapshot
 
 
+MAX_RUN_TIMEOUT_SECONDS = 2_147_483
+
+
+def _parse_connect_arguments(args: Sequence[str]) -> tuple[bool, int | None]:
+    manual = False
+    runtime_timeout_seconds: int | None = None
+    index = 0
+    while index < len(args):
+        option = args[index]
+        if option == "--manual":
+            if manual:
+                raise UsageError()
+            manual = True
+        elif option in {"--timeout", "-t"}:
+            if runtime_timeout_seconds is not None:
+                raise UsageError()
+            index += 1
+            if index >= len(args):
+                raise UsageError()
+            value = args[index]
+            if not value.isascii() or not value.isdigit():
+                raise UsageError()
+            runtime_timeout_seconds = int(value)
+            if not 1 <= runtime_timeout_seconds <= MAX_RUN_TIMEOUT_SECONDS:
+                raise UsageError()
+        else:
+            raise UsageError()
+        index += 1
+    return manual, runtime_timeout_seconds
+
+
 def _print_error(message: str, stream: TextIO) -> None:
     print(message, file=stream)
 
@@ -308,22 +339,28 @@ def main(
 
     if args and args[0] in {"connect", "status", "disconnect"}:
         command = args[0]
+        manual = False
+        runtime_timeout_seconds: int | None = None
         if command == "connect":
-            if args[1:] not in ([], ["--manual"]):
-                _print_error(usage_text(), err)
-                return 2
+            try:
+                manual, runtime_timeout_seconds = _parse_connect_arguments(args[1:])
+            except UsageError as error:
+                _print_error(error.usage(), err)
+                return error.exit_code
         elif len(args) != 1:
             _print_error(usage_text(), err)
             return 2
         try:
             if command == "connect":
-                if args[1:] == ["--manual"]:
-                    broker_manager.connect(
+                connect_options: dict[str, Any] = {}
+                if manual:
+                    connect_options.update(
                         manual=True,
                         on_bridge_url=lambda bridge_url: print(bridge_url, file=out, flush=True),
                     )
-                else:
-                    broker_manager.connect()
+                if runtime_timeout_seconds is not None:
+                    connect_options["runtime_timeout_seconds"] = runtime_timeout_seconds
+                broker_manager.connect(**connect_options)
                 _print_error("Connected.", out)
                 return 0
             if command == "status":

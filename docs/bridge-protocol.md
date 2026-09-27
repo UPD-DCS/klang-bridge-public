@@ -6,7 +6,7 @@ The browser bridge uses protocol version `1` and a bounded UTF-8 JSON envelope:
 { "protocolVersion": 1, "requestId": "...", "type": "...", "payload": {} }
 ```
 
-The browser opens `ws://127.0.0.1:<port>` using `port` and the one-time URL-fragment `token` from `/bridge#port=<port>&token=<token>`. The fragment is never sent as an HTTP query parameter.
+The browser opens `ws://127.0.0.1:<port>` using `port` and the one-time URL-fragment `token` from `/bridge#port=<port>&token=<token>`. A connect command may append `&timeout=<seconds>` to initialize the page's run wall-time field. This optional page preference is not part of a protocol envelope. The fragment is never sent as an HTTP query parameter or public HTTP request.
 
 The connection sequence is:
 

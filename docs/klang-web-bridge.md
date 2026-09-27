@@ -19,7 +19,8 @@ The console entry point is `klangb`.
 
 ```sh
 klangb connect
-klangb connect --manual
+klangb connect --timeout 45
+klangb connect --manual -t 45
 klangb status
 klangb disconnect
 klangb --dialect func-dynamic program.kl
@@ -43,6 +44,11 @@ an existing ready bridge.
 ready authenticated bridge is not already attached. Use `connect --manual` when
 the CLI must not open a browser: it prints the one-time bridge URL, then waits
 for the user to open it and for the browser runtime to become ready.
+`connect --timeout SECONDS` and `connect -t SECONDS` initialize the new bridge
+page's run wall-time field. The value must be a whole number from 1 through
+2,147,483; omission retains the 10-second runtime default. This setting does not
+change the independent connection readiness timeout. Because `connect` remains
+idempotent, it does not change the timeout on an already-ready page.
 `disconnect` is an idempotent best-effort runtime disposal and broker shutdown.
 
 ## Local boundary and security

@@ -14,6 +14,7 @@ import webbrowser
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping
+from urllib.parse import urlsplit, urlunsplit
 
 from .broker import DEFAULT_ORIGIN, spawn_detached_broker
 from .paths import RuntimePaths, RuntimeStateError
@@ -358,6 +359,7 @@ class BrokerManager:
         *,
         timeout: float = BRIDGE_READY_TIMEOUT_SECONDS,
         manual: bool = False,
+        runtime_timeout_seconds: int | None = None,
         on_bridge_url: Callable[[str], None] | None = None,
     ) -> dict[str, Any]:
         control = self.open_control()
@@ -368,6 +370,10 @@ class BrokerManager:
             bridge_url = bootstrap.get("bridgeUrl")
             if not isinstance(bridge_url, str) or not bridge_url:
                 raise ClientError("The broker could not create a browser bridge bootstrap.", code="client-broker")
+            if runtime_timeout_seconds is not None:
+                parsed_url = urlsplit(bridge_url)
+                fragment = f"{parsed_url.fragment}&timeout={runtime_timeout_seconds}"
+                bridge_url = urlunsplit(parsed_url._replace(fragment=fragment))
             if manual:
                 if on_bridge_url is not None:
                     on_bridge_url(bridge_url)
