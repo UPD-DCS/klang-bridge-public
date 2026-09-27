@@ -48,7 +48,11 @@ for the user to open it and for the browser runtime to become ready.
 page's run wall-time field. The value must be a whole number from 1 through
 2,147,483; omission retains the 10-second runtime default. This setting does not
 change the independent connection readiness timeout. Because `connect` remains
-idempotent, it does not change the timeout on an already-ready page.
+idempotent, it does not change the timeout on an already-ready page. Native run
+requests wait for the browser lifecycle to return success, failure,
+cancellation, or the browser's `timed-out` result; the broker's 30-second
+compile/IR deadline does not preempt a longer browser run limit.
+
 `disconnect` is an idempotent best-effort runtime disposal and broker shutdown.
 
 ## Local boundary and security

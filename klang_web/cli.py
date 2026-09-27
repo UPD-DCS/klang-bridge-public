@@ -246,11 +246,14 @@ def execute_compiler(
         if hasattr(signal, "SIGINT") and threading.current_thread() is threading.main_thread():
             old_handler = signal.getsignal(signal.SIGINT)
             signal.signal(signal.SIGINT, on_interrupt)
+        operation = (
+            "emit-ir" if arguments.emit_ir is not None else ("run" if arguments.run else "compile")
+        )
         result = control.operation(
-            "emit-ir" if arguments.emit_ir is not None else ("run" if arguments.run else "compile"),
+            operation,
             payload,
             request_id=request_id,
-            timeout=BRIDGE_READY_TIMEOUT_SECONDS,
+            timeout=None if operation == "run" else BRIDGE_READY_TIMEOUT_SECONDS,
             on_event=on_event,
         )
     except KeyboardInterrupt:

@@ -126,7 +126,7 @@ class _Operation:
     owner_id: str
     operation: str
     payload: dict[str, Any]
-    timeout: float
+    timeout: float | None
     done: threading.Event = field(default_factory=threading.Event)
     result: dict[str, Any] | None = None
     error: BrokerError | None = None
@@ -487,8 +487,13 @@ class PersistentBroker:
                 raise BrokerNotReadyError("No ready browser bridge. Run `klangb connect` first.")
             if request_id in self._pending or request_id in self._queued:
                 raise BrokerError("duplicate operation requestId")
-            effective_timeout = timeout if timeout is not None else self.config.operation_timeout_seconds
-            if effective_timeout <= 0:
+            if timeout is not None:
+                effective_timeout = timeout
+            elif operation == "run":
+                effective_timeout = None
+            else:
+                effective_timeout = self.config.operation_timeout_seconds
+            if effective_timeout is not None and effective_timeout <= 0:
                 raise BrokerError("operation timeout must be positive")
             item = _Operation(
                 request_id=request_id,
@@ -500,7 +505,8 @@ class PersistentBroker:
             )
             self._queued[request_id] = item
             self._operation_queue.put(item)
-        if not item.done.wait(item.timeout + 1.0):
+        caller_wait_timeout = None if item.timeout is None else item.timeout + 1.0
+        if not item.done.wait(caller_wait_timeout):
             item.cancelled = True
             self._request_bridge_stop(request_id)
             raise BrokerError("browser operation timed out", code="client-timeout")

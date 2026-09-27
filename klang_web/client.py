@@ -115,7 +115,7 @@ class ControlClient:
         payload: Mapping[str, Any] | None = None,
         *,
         request_id: str | None = None,
-        timeout: float = 30.0,
+        timeout: float | None = 30.0,
         on_event: Callable[[Envelope], None] | None = None,
     ) -> dict[str, Any]:
         if self._closed:
@@ -147,7 +147,7 @@ class ControlClient:
         payload: Mapping[str, Any],
         *,
         request_id: str | None = None,
-        timeout: float = 30.0,
+        timeout: float | None = 30.0,
         on_event: Callable[[Envelope], None] | None = None,
     ) -> dict[str, Any]:
         return self.request(
@@ -183,7 +183,7 @@ class ControlClient:
         payload: Mapping[str, Any],
         *,
         request_id: str | None = None,
-        timeout: float = 30.0,
+        timeout: float | None = None,
         on_event: Callable[[Envelope], None] | None = None,
     ) -> dict[str, Any]:
         return self.operation("run", payload, request_id=request_id, timeout=timeout, on_event=on_event)
@@ -261,7 +261,7 @@ class ControlClient:
         self,
         request_id: str,
         *,
-        timeout: float,
+        timeout: float | None,
         on_event: Callable[[Envelope], None] | None = None,
     ) -> Envelope:
         old_timeout = self.sock.gettimeout()
