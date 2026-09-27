@@ -1,7 +1,7 @@
 # `klangb` native bridge
 
-`klangb` is a Python 3.12+ standard-library-only native client. It never
-runs generated Python and it never uploads source to a public HTTP server. A
+`klangb` is the `klang-bridge` Python package, a Python 3.12+
+standard-library-only native client. It never runs generated Python and it never uploads source to a public HTTP server. A
 persistent per-user broker transfers a bounded source snapshot to an
 authenticated compatible browser bridge, where the browser-hosted KLang
 compiler and Worker execute it. This repository does not require a KLang-web
@@ -40,7 +40,7 @@ an existing ready bridge.
 
 `status` reports `ready`, `disconnected`, `stale`, `bootstrapping`, or
 `bootstrap-failed`. `connect` is idempotent and opens the configured
-`KLANG_WEB_ORIGIN` bridge URL (default `https://klang.upd-dcs.work`) only when a
+`KLANG_BRIDGE_ORIGIN` bridge URL (default `https://klang.upd-dcs.work`) only when a
 ready authenticated bridge is not already attached. Use `connect --manual` when
 the CLI must not open a browser: it prints the one-time bridge URL, then waits
 for the user to open it and for the browser runtime to become ready.
@@ -58,17 +58,18 @@ compile/IR deadline does not preempt a longer browser run limit.
 ## Local boundary and security
 
 Runtime state defaults to the per-user runtime/state directory and can be
-isolated for tests with `KLANG_WEB_RUNTIME_DIR`. An optional `config.ini` in
-that directory can set the non-secret origin:
+isolated for tests with `KLANG_BRIDGE_RUNTIME_DIR`. For compatibility,
+`KLANG_WEB_RUNTIME_DIR` is also accepted when the new variable is unset. An
+optional `config.ini` in that directory can set the non-secret origin:
 
 ```ini
 [bridge]
 origin = https://klang.example
 ```
 
-`KLANG_WEB_ORIGIN` overrides the config file, which overrides the
-`https://klang.upd-dcs.work` default. Set either override to
-`http://127.0.0.1:5174` for local development. The broker stores its control
+`KLANG_BRIDGE_ORIGIN` overrides legacy `KLANG_WEB_ORIGIN`, which overrides the
+config file, which overrides the `https://klang.upd-dcs.work` default. Set either
+override to `http://127.0.0.1:5174` for local development. The broker stores its control
 secret in a private file, binds both listeners to `127.0.0.1`, and uses a
 length-prefixed UTF-8 JSON control channel. The browser side uses a minimal
 RFC 6455 text WebSocket channel. It requires:

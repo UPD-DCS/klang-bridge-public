@@ -302,7 +302,11 @@ class BrokerManager:
         opener: Callable[[str], Any] = webbrowser.open,
     ) -> None:
         self.paths = paths or RuntimePaths.from_environment()
-        configured_origin = os.environ.get("KLANG_WEB_ORIGIN") or self.paths.configured_origin()
+        configured_origin = (
+            os.environ.get("KLANG_BRIDGE_ORIGIN")
+            or os.environ.get("KLANG_WEB_ORIGIN")
+            or self.paths.configured_origin()
+        )
         self.origin = origin or configured_origin or DEFAULT_ORIGIN
         self.spawn = spawn
         self.opener = opener

@@ -737,7 +737,7 @@ class LoopbackWebSocketServer:
     def start(self) -> "LoopbackWebSocketServer":
         if self._thread is not None:
             return self
-        self._thread = threading.Thread(target=self._accept_loop, name="klang-web-ws", daemon=True)
+        self._thread = threading.Thread(target=self._accept_loop, name="klang-bridge-ws", daemon=True)
         self._thread.start()
         return self
 
@@ -774,7 +774,7 @@ class LoopbackWebSocketServer:
             thread = threading.Thread(
                 target=self._handle_connection,
                 args=(client,),
-                name="klang-web-ws-client",
+                name="klang-bridge-ws-client",
                 daemon=True,
             )
             thread.start()

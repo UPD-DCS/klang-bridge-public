@@ -29,13 +29,13 @@ klangb disconnect
 `connect` uses `https://klang.upd-dcs.work` by default. Use
 `klangb connect --manual` to print the one-time bridge URL instead of opening a
 browser automatically; the command waits for you to open that URL and for the
-bridge to become ready. Set `KLANG_WEB_ORIGIN` to use another compatible browser
+bridge to become ready. Set `KLANG_BRIDGE_ORIGIN` to use another compatible browser
 host, including the local server for development:
 
 ```sh
-KLANG_WEB_ORIGIN=https://klang.example klangb connect
+KLANG_BRIDGE_ORIGIN=https://klang.example klangb connect
 ```
 
 A `run` command automatically connects to a compatible browser host when needed; ordinary compilation still requires an existing connection. Browser compatibility follows protocol version and required compiler capabilities, so KLang and Pyodide upgrades do not require a lockstep `klangb` release. Exact runtime provenance remains available through `klangb status` for diagnostics.
 
-See the [bridge guide](docs/klang-web-bridge.md) for configuration and troubleshooting, the [protocol](docs/bridge-protocol.md) for integration details, and the [compatibility vectors](docs/bridge-protocol-vectors.json) for examples.
+See the [bridge guide](docs/klang-bridge.md) for configuration and troubleshooting, the [protocol](docs/bridge-protocol.md) for integration details, and the [compatibility vectors](docs/bridge-protocol-vectors.json) for examples.

@@ -16,7 +16,8 @@ from pathlib import Path
 from typing import Any, Mapping
 from urllib.parse import urlsplit
 
-RUNTIME_ENV = "KLANG_WEB_RUNTIME_DIR"
+RUNTIME_ENV = "KLANG_BRIDGE_RUNTIME_DIR"
+LEGACY_RUNTIME_ENV = "KLANG_WEB_RUNTIME_DIR"
 STATE_FILE_NAME = "broker.state.json"
 SECRET_FILE_NAME = "broker.secret"
 LOCK_DIR_NAME = "broker.lock"
@@ -186,29 +187,45 @@ class RuntimePaths:
     @classmethod
     def from_environment(cls, environ: Mapping[str, str] | None = None) -> "RuntimePaths":
         env = os.environ if environ is None else environ
-        explicit = env.get(RUNTIME_ENV)
+        explicit = env.get(RUNTIME_ENV) or env.get(LEGACY_RUNTIME_ENV)
         if explicit:
             root = Path(explicit).expanduser()
         elif os.name == "nt":
             local_app_data = env.get("LOCALAPPDATA")
             root = (
+                Path(local_app_data).expanduser() / "KLang Bridge"
+                if local_app_data
+                else Path.home() / "AppData" / "Local" / "KLang Bridge"
+            )
+            legacy = (
                 Path(local_app_data).expanduser() / "KLang Web"
                 if local_app_data
                 else Path.home() / "AppData" / "Local" / "KLang Web"
             )
+            if not root.exists() and legacy.exists():
+                root = legacy
         else:
             xdg_runtime = env.get("XDG_RUNTIME_DIR")
             if xdg_runtime:
-                root = Path(xdg_runtime).expanduser() / "klang-web"
+                root = Path(xdg_runtime).expanduser() / "klang-bridge"
+                legacy = Path(xdg_runtime).expanduser() / "klang-web"
             elif sys.platform == "darwin":
-                root = Path.home() / "Library" / "Application Support" / "KLang Web"
+                root = Path.home() / "Library" / "Application Support" / "KLang Bridge"
+                legacy = Path.home() / "Library" / "Application Support" / "KLang Web"
             else:
                 xdg_state = env.get("XDG_STATE_HOME")
                 root = (
+                    Path(xdg_state).expanduser() / "klang-bridge"
+                    if xdg_state
+                    else Path.home() / ".local" / "state" / "klang-bridge"
+                )
+                legacy = (
                     Path(xdg_state).expanduser() / "klang-web"
                     if xdg_state
                     else Path.home() / ".local" / "state" / "klang-web"
                 )
+            if not root.exists() and legacy.exists():
+                root = legacy
         return cls(root.resolve())
 
     @property
@@ -386,9 +403,9 @@ class BrokerLock:
                 try:
                     self.paths.lock_dir.mkdir()
                 except FileExistsError as error:
-                    raise LockHeldError("another klang-web broker owns the runtime lock") from error
+                    raise LockHeldError("another klang-bridge broker owns the runtime lock") from error
             else:
-                raise LockHeldError("another klang-web broker owns the runtime lock")
+                raise LockHeldError("another klang-bridge broker owns the runtime lock")
         except OSError as error:
             raise RuntimeStateError(f"could not create broker lock: {self.paths.lock_dir}") from error
         try:

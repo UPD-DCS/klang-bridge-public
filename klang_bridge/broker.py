@@ -156,7 +156,7 @@ class _ControlSession:
         self.monitor_thread = threading.Thread(
             target=self._monitor_disconnect,
             args=(callback,),
-            name="klang-web-control-monitor",
+            name="klang-bridge-control-monitor",
             daemon=True,
         )
         self.monitor_thread.start()
@@ -325,13 +325,13 @@ class PersistentBroker:
             self._started = True
             self._control_thread = threading.Thread(
                 target=self._control_accept_loop,
-                name="klang-web-control",
+                name="klang-bridge-control",
                 daemon=True,
             )
             self._control_thread.start()
             self._operation_thread = threading.Thread(
                 target=self._operation_loop,
-                name="klang-web-operations",
+                name="klang-bridge-operations",
                 daemon=True,
             )
             self._operation_thread.start()
@@ -559,7 +559,7 @@ class PersistentBroker:
             except (PeerDisconnected, WebSocketError, OSError):
                 pass
         if shutdown:
-            threading.Thread(target=self.stop, name="klang-web-shutdown", daemon=True).start()
+            threading.Thread(target=self.stop, name="klang-bridge-shutdown", daemon=True).start()
         return {"disposed": True, "status": "stopping" if shutdown else "disconnected"}
 
     def cancel_owner(self, owner_id: str) -> None:
@@ -652,7 +652,7 @@ class PersistentBroker:
         self._expire_bootstrap()
         with self._state_lock:
             bootstrap = self._bootstrap
-            digest = hmac.new(b"klang-web-token", token.encode("utf-8"), "sha256").hexdigest()
+            digest = hmac.new(b"klang-bridge-token", token.encode("utf-8"), "sha256").hexdigest()
             if digest in self._used_token_digests:
                 return "replayed"
             if bootstrap is None:
@@ -1049,7 +1049,7 @@ class PersistentBroker:
             thread = threading.Thread(
                 target=self._control_session,
                 args=(client,),
-                name="klang-web-control-client",
+                name="klang-bridge-control-client",
                 daemon=True,
             )
             thread.start()
@@ -1162,7 +1162,7 @@ def spawn_detached_broker(
     command = [
         executable,
         "-m",
-        "klang_web.broker",
+        "klang_bridge.broker",
         "--serve",
         "--runtime-dir",
         str(paths.root),
@@ -1170,6 +1170,7 @@ def spawn_detached_broker(
         origin,
     ]
     environment = os.environ.copy()
+    environment["KLANG_BRIDGE_RUNTIME_DIR"] = str(paths.root)
     environment["KLANG_WEB_RUNTIME_DIR"] = str(paths.root)
     if extra_environment:
         environment.update(extra_environment)

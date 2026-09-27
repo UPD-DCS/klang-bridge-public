@@ -1,4 +1,4 @@
-"""Native client and persistent localhost broker for KLang Web.
+"""Native client and persistent localhost broker for KLang.
 
 The package intentionally contains no compiler or Python execution engine.  It
 only validates the protocol-1 command capabilities, transfers bounded source
@@ -30,7 +30,7 @@ __all__ = [
     "parse_compiler_arguments",
 ]
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 
 def __getattr__(name: str):
