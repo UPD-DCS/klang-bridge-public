@@ -24,7 +24,8 @@ klangb connect --manual -t 45
 klangb status
 klangb disconnect
 klangb --dialect func-dynamic program.kl
-klangb run --dialect func-hm program.kl
+klangb --dialect pure-dynamic program.kl
+klangb run --dialect pure-hm program.kl
 klangb --emit-ir=typed --dialect func-hm program.kl
 klangb --run --dialect func-dynamic program.kl -o generated.py
 ```
@@ -91,8 +92,9 @@ provenance.
 
 Compatibility is based on protocol version `1` and compiler capabilities, not a
 specific KLang, Worker, or Pyodide release. The browser must report valid
-provenance, all 14 dialects (including `lazy`), all three IR modes, the native
-option vocabulary, and a non-negative Worker generation. Additional dialects,
+provenance, all 16 dialects (including `pure-dynamic`, `lazy`, and `pure-hm`),
+all three IR modes, the native option vocabulary, and a non-negative Worker
+generation. Additional dialects,
 IR modes, and options are allowed. KLang version, commit, artifact hash and
 size, Worker version, and Pyodide version remain visible in status output but
 do not form an artifact allowlist.

@@ -27,15 +27,15 @@
           "sha256": "b077405f879b1607671a876faf2851563ed45b18ecebe208b37468c46549fde8",
           "sizeBytes": 4087882,
           "supportedDialects": [
-            "func-dynamic", "lazy", "func-stlc", "func-hm", "decl-dynamic", "decl-hm",
-            "rel-dynamic", "rel-hm", "dataflow-dynamic", "dataflow-hm",
+            "func-dynamic", "pure-dynamic", "lazy", "func-stlc", "func-hm", "pure-hm",
+            "decl-dynamic", "decl-hm", "rel-dynamic", "rel-hm", "dataflow-dynamic", "dataflow-hm",
             "state-dynamic", "state-hm", "message-dynamic", "message-hm"
           ],
           "compilerContract": {
             "schemaVersion": 1,
             "dialects": [
-              "func-dynamic", "lazy", "func-stlc", "func-hm", "decl-dynamic", "decl-hm",
-              "rel-dynamic", "rel-hm", "dataflow-dynamic", "dataflow-hm",
+              "func-dynamic", "pure-dynamic", "lazy", "func-stlc", "func-hm", "pure-hm",
+              "decl-dynamic", "decl-hm", "rel-dynamic", "rel-hm", "dataflow-dynamic", "dataflow-hm",
               "state-dynamic", "state-hm", "message-dynamic", "message-hm"
             ],
             "irModes": ["default", "typed", "spans"],
@@ -45,8 +45,8 @@
         "contract": {
           "schemaVersion": 1,
           "dialects": [
-            "func-dynamic", "lazy", "func-stlc", "func-hm", "decl-dynamic", "decl-hm",
-            "rel-dynamic", "rel-hm", "dataflow-dynamic", "dataflow-hm",
+            "func-dynamic", "pure-dynamic", "lazy", "func-stlc", "func-hm", "pure-hm",
+            "decl-dynamic", "decl-hm", "rel-dynamic", "rel-hm", "dataflow-dynamic", "dataflow-hm",
             "state-dynamic", "state-hm", "message-dynamic", "message-hm"
           ],
           "irModes": ["default", "typed", "spans"],

@@ -21,7 +21,8 @@ klangb connect
 klangb connect --manual
 klangb status
 klangb --dialect func-dynamic program.kl
-klangb run --dialect func-hm program.kl
+klangb --dialect pure-dynamic program.kl
+klangb run --dialect pure-hm program.kl
 klangb --emit-ir=typed --dialect func-hm program.kl
 klangb disconnect
 ```

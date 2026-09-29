@@ -12,9 +12,11 @@ from .protocol import KLANG_VERSION_PATTERN
 
 SUPPORTED_DIALECTS: Final[tuple[str, ...]] = (
     "func-dynamic",
+    "pure-dynamic",
     "lazy",
     "func-stlc",
     "func-hm",
+    "pure-hm",
     "decl-dynamic",
     "decl-hm",
     "rel-dynamic",
